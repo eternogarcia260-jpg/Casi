@@ -6,10 +6,12 @@
 import { CircuitId, ICircuitDefinition } from './ICircuit';
 import { SquareCircuitConfig } from './square/SquareCircuitConfig';
 import { SpeedwayCircuitConfig } from './speedway/SpeedwayCircuitConfig';
+import { SingaporeCircuitConfig } from './singapore/SingaporeCircuitConfig';
 
 export const AVAILABLE_CIRCUITS: ICircuitDefinition[] = [
   SquareCircuitConfig,
   SpeedwayCircuitConfig,
+  SingaporeCircuitConfig,
 ];
 
 export const DEFAULT_CIRCUIT_ID: CircuitId = 'square_apex';

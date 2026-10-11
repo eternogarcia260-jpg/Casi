@@ -175,7 +175,7 @@ export const HUD = React.memo<HUDProps>(({
   let mapX = 50 + (posX / 130) * 42;
   let mapY = 50 - (posZ / 130) * 42;
 
-  if (activeCircuit.id === 'speedway_gp') {
+  if (activeCircuit.id !== 'square_apex') {
     const b = activeCircuit.minimapConfig.bounds;
     mapX = 10 + Math.max(0, Math.min(1, (posX - b.minX) / (b.maxX - b.minX))) * 80;
     mapY = 10 + Math.max(0, Math.min(1, (posZ - b.minZ) / (b.maxZ - b.minZ))) * 80;
@@ -253,26 +253,25 @@ export const HUD = React.memo<HUDProps>(({
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Radar Mini-map */}
             <div className="relative w-8 h-8 sm:w-10 sm:h-10 bg-neutral-900/90 rounded-xl border border-white/10 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
-              <svg viewBox="0 0 100 100" className="w-full h-full p-0.5 opacity-80">
-                {activeCircuit.id === 'speedway_gp' ? (
+              <svg viewBox={activeCircuit.id === 'square_apex' ? '0 0 100 100' : activeCircuit.minimapConfig.viewBox} className="w-full h-full p-0.5 opacity-80 overflow-visible">
+                {activeCircuit.id !== 'square_apex' ? (
                   <>
                     <path
                       d={activeCircuit.minimapConfig.svgTrackPath}
                       fill="none"
                       stroke="#52525b"
-                      strokeWidth="5"
+                      strokeWidth="10"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                     <path
                       d={activeCircuit.minimapConfig.svgTrackPath}
                       fill="none"
-                      stroke="#18181b"
-                      strokeWidth="3"
+                      stroke={activeCircuit.id === 'singapore_marina' ? '#0ea5e9' : '#18181b'}
+                      strokeWidth="5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
-                    <line x1="48" y1="11" x2="48" y2="19" stroke="#ef4444" strokeWidth="2.5" />
                   </>
                 ) : (
                   <>

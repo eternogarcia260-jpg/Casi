@@ -8,7 +8,7 @@ import { SplinePoint } from '../career/CircuitWaypoints';
 import { StaticObstacle, DynamicProp } from '../world/TrackBuilder';
 import { GrandstandCrowdSystem } from '../crowd/GrandstandCrowdSystem';
 
-export type CircuitId = 'square_apex' | 'speedway_gp';
+export type CircuitId = 'square_apex' | 'speedway_gp' | 'singapore_marina';
 
 export interface ITrackWorld {
   group: THREE.Group;

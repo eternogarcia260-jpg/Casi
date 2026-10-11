@@ -338,9 +338,10 @@ export const MainMenuDashboard: React.FC<MainMenuDashboardProps> = ({
                   <span className="text-[11px] text-amber-400 font-bold">{currentCircuit.name}</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {AVAILABLE_CIRCUITS.map((circ) => {
                     const isSelected = selectedCircuit === circ.id;
+                    const isNight = circ.id === 'singapore_marina';
                     return (
                       <button
                         key={circ.id}
@@ -350,14 +351,23 @@ export const MainMenuDashboard: React.FC<MainMenuDashboardProps> = ({
                           playUiClick(850);
                         }}
                         onMouseEnter={playUiHover}
-                        className={`p-4 rounded-2xl border text-left transition-all duration-300 relative overflow-hidden flex flex-col gap-2.5 cursor-pointer ${
+                        className={`p-3.5 rounded-2xl border text-left transition-all duration-300 relative overflow-hidden flex flex-col gap-2 cursor-pointer ${
                           isSelected
-                            ? 'bg-[#1e1315] border-red-500 shadow-[0_0_20px_rgba(220,38,38,0.3)] ring-2 ring-red-500/40'
+                            ? isNight
+                              ? 'bg-[#0f172a] border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.35)] ring-2 ring-cyan-400/50'
+                              : 'bg-[#1e1315] border-red-500 shadow-[0_0_20px_rgba(220,38,38,0.3)] ring-2 ring-red-500/40'
                             : 'bg-[#121722] hover:bg-[#181f2e] border-neutral-700 hover:border-neutral-500'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-base">{circ.flagEmoji}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-base">{circ.flagEmoji}</span>
+                            {isNight && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-950/90 text-cyan-300 border border-cyan-500/50 tracking-wider">
+                                NOCTURNO
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[10px] font-bold tracking-widest text-neutral-300 uppercase">
                             {circ.totalLength}M
                           </span>

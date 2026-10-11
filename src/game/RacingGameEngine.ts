@@ -342,6 +342,7 @@ export class RacingGameEngine {
     // 6. Environmental Lighting & Realistic Skybox
     this.setupLighting();
     this.setupSkybox();
+    this.applyCircuitAtmosphere(this.activeCircuit.id);
 
     // 7. Connect Vehicle Physics Audio & Particle Event Hooks
     this.physics.onBackfire = (isHighRpm) => {
@@ -1154,9 +1155,62 @@ export class RacingGameEngine {
     this.syncCarModel(0.016);
     this.cameraSystem.resetToPose(pPose.x, 0.35, pPose.z, pPose.yaw);
 
+    this.applyCircuitAtmosphere(newCircuit.id);
+
     try {
       this.renderer.compile(this.scene, this.camera);
     } catch {}
+  }
+
+  public applyCircuitAtmosphere(circuitId: CircuitId): void {
+    const isNight = circuitId === 'singapore_marina';
+
+    if (this.dynamicSky) {
+      this.dynamicSky.setNightMode(isNight);
+      const envMap = this.dynamicSky.generateEnvironmentMap(this.renderer, isNight);
+      this.envMapTexture = envMap;
+      this.scene.environment = envMap;
+      this.scene.environmentIntensity = isNight ? 1.55 : 1.15;
+    }
+
+    if (this.cinematicOptics) {
+      this.cinematicOptics.setNightMode(isNight);
+    }
+
+    if (isNight) {
+      this.scene.fog = new THREE.Fog(0x0a101d, 350, 1200);
+      if (this.hemiLight) {
+        this.hemiLight.color.setHex(0x1e3a6a);
+        this.hemiLight.groundColor.setHex(0x060c18);
+        this.hemiLight.intensity = 0.95;
+      }
+      if (this.dirLight) {
+        this.dirLight.color.setHex(0xf8fafc);
+        this.dirLight.intensity = 3.2;
+        this.dirLight.position.set(-20, 45, -110);
+        this.dirLight.target.position.set(0, 0, -135);
+      }
+      this.renderer.toneMappingExposure = 1.6;
+    } else {
+      this.scene.fog = new THREE.Fog(0x1a2638, 380, 1250);
+      if (this.hemiLight) {
+        this.hemiLight.color.setHex(0x1e365d);
+        this.hemiLight.groundColor.setHex(0x111419);
+        this.hemiLight.intensity = 0.52;
+      }
+      if (this.dirLight) {
+        this.dirLight.color.setHex(0xffeed6);
+        this.dirLight.intensity = 3.8;
+        this.dirLight.position.set(-87, 13.5, -178);
+        this.dirLight.target.position.set(-27, 0.2, -124);
+      }
+      this.renderer.toneMappingExposure = 1.8;
+    }
+
+    if (this.dirLight) {
+      this.dirLight.target.updateMatrixWorld();
+      this.dirLight.updateMatrixWorld();
+    }
   }
 
   public prewarmGPU(): void {

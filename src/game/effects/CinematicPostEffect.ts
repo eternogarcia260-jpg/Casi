@@ -42,6 +42,7 @@ export class CinematicPostEffect {
       uniform float uWarmth;
       uniform float uSpeedFactor;
       uniform float uSunFacing;
+      uniform float uIsNight;
       varying vec2 vUv;
 
       void main() {
@@ -66,22 +67,35 @@ export class CinematicPostEffect {
           streak = streakY * pow(sunFacingGate, 3.0) * 0.025;
         }
 
-        float baseAlpha = vignetteFactor + veilingGlare + streak;
+        // Night anamorphic optical horizontal glare from stadium floodlights
+        float nightStreak = 0.0;
+        if (uIsNight > 0.5 && uv.y > 0.36 && uv.y < 0.78) {
+          float nY = exp(-pow((uv.y - 0.55) * 34.0, 2.0));
+          float nMod = 0.5 + 0.5 * sin(uv.x * 24.0 + uTime * 1.5);
+          nightStreak = nY * nMod * 0.035 * (0.65 + uSpeedFactor * 0.35);
+        }
+
+        float baseAlpha = vignetteFactor + veilingGlare + streak + nightStreak;
         float noise = 0.0;
         if (baseAlpha > 0.003) {
           vec2 ditherCoord = gl_FragCoord.xy + vec2(fract(uTime * 17.13) * 64.0);
           float dither = fract(sin(dot(ditherCoord, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
-          noise = dither * uGrainIntensity;
+          noise = dither * (uIsNight > 0.5 ? uGrainIntensity * 1.3 : uGrainIntensity);
         }
 
         // 5. Total composite optical alpha
-        float alpha = clamp(baseAlpha + noise, 0.0, 0.32);
+        float alpha = clamp(baseAlpha + noise, 0.0, 0.35);
 
-        // Tint: Vignette corners are pure neutral black; solar glare is delicate warm gold in high sky
+        // Tint: Vignette corners are pure neutral black; solar glare is delicate warm gold in high sky; night is stadium sapphire
         vec3 neutralBlack = vec3(0.0, 0.0, 0.0);
         vec3 solarGlint = vec3(0.085, 0.055, 0.022);
+        vec3 nightGlint = vec3(0.018, 0.048, 0.095);
         float solarWeight = clamp((veilingGlare + streak) * 2.5, 0.0, 1.0);
-        vec3 tint = mix(neutralBlack, solarGlint, solarWeight);
+        float nightWeight = clamp(nightStreak * 6.0, 0.0, 1.0);
+
+        vec3 tint = uIsNight > 0.5
+          ? mix(neutralBlack, nightGlint, nightWeight)
+          : mix(neutralBlack, solarGlint, solarWeight);
 
         gl_FragColor = vec4(tint, alpha);
       }
@@ -97,6 +111,7 @@ export class CinematicPostEffect {
         uWarmth: { value: 0.55 },
         uSpeedFactor: { value: 0.0 },
         uSunFacing: { value: 0.5 },
+        uIsNight: { value: 0.0 },
       },
       transparent: true,
       depthTest: false,
@@ -133,6 +148,10 @@ export class CinematicPostEffect {
 
   public setVignette(intensity: number): void {
     this.postMaterial.uniforms.uVignetteIntensity.value = intensity;
+  }
+
+  public setNightMode(isNight: boolean): void {
+    this.postMaterial.uniforms.uIsNight.value = isNight ? 1.0 : 0.0;
   }
 
   public dispose(): void {

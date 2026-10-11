@@ -42,6 +42,7 @@ export class DynamicSkySystem {
     uSkyZenithColor: { value: THREE.Vector3 };
     uSkyHorizonColor: { value: THREE.Vector3 };
     uGroundHazeColor: { value: THREE.Vector3 };
+    uIsNight: { value: number };
   };
 
   private envTexture: THREE.Texture | null = null;
@@ -62,6 +63,7 @@ export class DynamicSkySystem {
       uSkyZenithColor: { value: new THREE.Vector3(zenith.r, zenith.g, zenith.b) },
       uSkyHorizonColor: { value: new THREE.Vector3(horizon.r, horizon.g, horizon.b) },
       uGroundHazeColor: { value: new THREE.Vector3(groundHaze.r, groundHaze.g, groundHaze.b) },
+      uIsNight: { value: 0.0 },
     };
 
     const vertexShader = `
@@ -81,6 +83,7 @@ export class DynamicSkySystem {
       varying vec3 vWorldRay;
 
       uniform float uTime;
+      uniform float uIsNight;
       uniform vec3 uSunDirection;
       uniform vec3 uSunColor;
       uniform vec3 uSkyZenithColor;
@@ -90,6 +93,38 @@ export class DynamicSkySystem {
       void main() {
         vec3 ray = normalize(vWorldRay);
         float elevation = clamp(ray.y, 0.0005, 1.0);
+
+        // Night Sky Mode (Singapore Marina Bay nocturnal atmosphere with stars & urban glow)
+        if (uIsNight > 0.5) {
+          vec3 nightZenith = vec3(0.015, 0.026, 0.065);
+          vec3 cityHorizon = vec3(0.045, 0.088, 0.165);
+          float nightGrad = pow(elevation, 0.42);
+          vec3 nightAtmosphere = mix(cityHorizon, nightZenith, nightGrad);
+
+          // Twinkling celestial stars
+          if (elevation > 0.08) {
+            vec3 starRay = normalize(vWorldRay);
+            float starHash = fract(sin(dot(floor(starRay * 380.0), vec3(12.9898, 78.233, 45.164))) * 43758.5453);
+            if (starHash > 0.992) {
+              float starTwinkle = 0.55 + 0.45 * sin(uTime * 3.8 + starHash * 80.0);
+              nightAtmosphere += vec3(0.85, 0.92, 1.0) * starTwinkle * (elevation - 0.08) * 1.8;
+            }
+          }
+
+          // Soft lunar disc glow
+          float moonAngle = dot(ray, normalize(vec3(-0.35, 0.85, -0.45)));
+          if (moonAngle > 0.998) {
+            nightAtmosphere += vec3(0.82, 0.90, 1.0) * 2.2;
+          }
+
+          if (ray.y < 0.0) {
+            float groundFactor = clamp(-ray.y * 4.0, 0.0, 1.0);
+            nightAtmosphere = mix(nightAtmosphere, vec3(0.012, 0.016, 0.024), groundFactor);
+          }
+
+          gl_FragColor = vec4(nightAtmosphere, 1.0);
+          return;
+        }
 
         // ---------------------------------------------------------------------
         // A. PHYSICAL RAYLEIGH ATMOSPHERE, OZONE & SUNSET HORIZON
@@ -173,22 +208,33 @@ export class DynamicSkySystem {
    * Generates a seamless 360° equirectangular environment texture for IBL car reflections
    * matching the atmospheric daylight palette and sunset lighting.
    */
-  public generateEnvironmentMap(renderer: THREE.WebGLRenderer): THREE.Texture {
+  public generateEnvironmentMap(renderer: THREE.WebGLRenderer, isNight: boolean = false): THREE.Texture {
     const canvas = document.createElement('canvas');
     canvas.width = 2048;
     canvas.height = 1024;
     const ctx = canvas.getContext('2d')!;
 
-    // 1. Physically-calibrated atmosphere vertical gradient (Sapphire twilight & low golden horizon)
+    // 1. Physically-calibrated atmosphere vertical gradient
     const skyGrad = ctx.createLinearGradient(0, 0, 0, 1024);
-    skyGrad.addColorStop(0.0, '#040d22');  // Zenith deep twilight cobalt
-    skyGrad.addColorStop(0.30, '#12244a'); // Mid-sky royal cobalt
-    skyGrad.addColorStop(0.44, '#262842'); // Ozone Chappuis twilight transition
-    skyGrad.addColorStop(0.485, '#e07628'); // Warm sunset horizon band
-    skyGrad.addColorStop(0.50, '#ffbe58'); // Low crisp golden solar horizon line
-    skyGrad.addColorStop(0.51, '#161c24'); // Distant mountains & terrain in cool dusk silhouette
-    skyGrad.addColorStop(0.56, '#0d1015'); // Track perimeter asphalt transition
-    skyGrad.addColorStop(1.0, '#07090c');  // Neutral dark bitumen ground bounce (ZERO brown/orange)
+    if (isNight) {
+      skyGrad.addColorStop(0.0, '#02050e');  // Zenith deep dark space
+      skyGrad.addColorStop(0.30, '#060e22'); // Midnight blue
+      skyGrad.addColorStop(0.44, '#0e1d3d'); // High Singapore skyline dome
+      skyGrad.addColorStop(0.485, '#1e3a6a'); // Urban sodium/mercury horizon glow
+      skyGrad.addColorStop(0.50, '#38bdf8'); // Floodlight rim highlight
+      skyGrad.addColorStop(0.51, '#0c1524'); // Distant city towers silhouette
+      skyGrad.addColorStop(0.56, '#060a12'); // Dark tarmac perimeter
+      skyGrad.addColorStop(1.0, '#03050a');  // Deep specular ground
+    } else {
+      skyGrad.addColorStop(0.0, '#040d22');  // Zenith deep twilight cobalt
+      skyGrad.addColorStop(0.30, '#12244a'); // Mid-sky royal cobalt
+      skyGrad.addColorStop(0.44, '#262842'); // Ozone Chappuis twilight transition
+      skyGrad.addColorStop(0.485, '#e07628'); // Warm sunset horizon band
+      skyGrad.addColorStop(0.50, '#ffbe58'); // Low crisp golden solar horizon line
+      skyGrad.addColorStop(0.51, '#161c24'); // Distant mountains & terrain in cool dusk silhouette
+      skyGrad.addColorStop(0.56, '#0d1015'); // Track perimeter asphalt transition
+      skyGrad.addColorStop(1.0, '#07090c');  // Neutral dark bitumen ground bounce
+    }
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, 2048, 1024);
 
@@ -246,6 +292,10 @@ export class DynamicSkySystem {
 
   public setSunDirection(sunDir: THREE.Vector3): void {
     this.uniforms.uSunDirection.value.copy(sunDir).normalize();
+  }
+
+  public setNightMode(isNight: boolean): void {
+    this.uniforms.uIsNight.value = isNight ? 1.0 : 0.0;
   }
 
   public getSkyZenithColor(): THREE.Color {
