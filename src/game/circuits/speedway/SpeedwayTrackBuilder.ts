@@ -1695,7 +1695,7 @@ export class SpeedwayTrackBuilder implements ITrackWorld {
       eqHoseGeos.push(hGeo);
     }
 
-    [-20, -8, 8, 20].forEach((tx) => {
+    [-8, 8].forEach((tx) => {
       for (let t = 0; t < 3; t++) {
         const tGeo = tireBase.clone();
         tGeo.translate(tx, 0.18 + t * 0.36, -107.2);
@@ -1982,12 +1982,26 @@ export class SpeedwayTrackBuilder implements ITrackWorld {
     });
 
     // Paddock Back Wall and Pit Exit Perimeter Guide Wall
-    const paddockGuidePoints: { x: number; z: number }[] = [
+    // Openings behind Garage 01 (x = -22) and Garage 02 (x = +22) cleanly eliminate the wall
+    // behind the mechanics in both boxes so garage entrances stay open and mechanics never clip
+    const paddockWestGuide: { x: number; z: number }[] = [
       { x: -80, z: -105.8 },
+      { x: -28.0, z: -105.8 },
+    ];
+    loftBarrierRibbon(paddockWestGuide, false, true);
+
+    const paddockCentralGuide: { x: number; z: number }[] = [
+      { x: -16.0, z: -105.8 },
+      { x: 16.0, z: -105.8 },
+    ];
+    loftBarrierRibbon(paddockCentralGuide, false, true);
+
+    const paddockEastGuide: { x: number; z: number }[] = [
+      { x: 28.0, z: -105.8 },
       { x: 85, z: -105.8 },
       { x: 155, z: -117.2 },
     ];
-    loftBarrierRibbon(paddockGuidePoints, false, true);
+    loftBarrierRibbon(paddockEastGuide, false, true);
 
     if (concretePositions.length > 0) {
       const concreteGeo = new THREE.BufferGeometry();

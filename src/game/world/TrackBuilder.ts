@@ -2289,13 +2289,29 @@ export class TrackBuilder {
     loftContinuousBarrier(turn2InnerPoints, false, true);
 
     // Turn 4 to Paddock & Turn 1 Transitions
-    const turn4Transition: { x: number; z: number }[] = [
+    // Wall behind mechanics is cleanly eliminated in both pit boxes (Box 1 at x = -22, Box 2 at x = +22)
+    // so the garage bays remain open and mechanics never clip during animations.
+    const paddockWestSection: { x: number; z: number }[] = [
       { x: -innerHalf, z: -c },
       { x: -c, z: -105.8 },
+      { x: -28.0, z: -105.8 },
+    ];
+    loftContinuousBarrier(paddockWestSection, false, false);
+
+    // Central Paddock Barrier between the two garages
+    const paddockCentralSection: { x: number; z: number }[] = [
+      { x: -16.0, z: -105.8 },
+      { x: 16.0, z: -105.8 },
+    ];
+    loftContinuousBarrier(paddockCentralSection, false, false);
+
+    // East section continuing from Box 2 edge to Turn 1 transition
+    const paddockEastSection: { x: number; z: number }[] = [
+      { x: 28.0, z: -105.8 },
       { x: c, z: -105.8 },
       { x: innerHalf, z: -c },
     ];
-    loftContinuousBarrier(turn4Transition, false, false);
+    loftContinuousBarrier(paddockEastSection, false, false);
 
     // Turn 1 Inner Apex Barrier (South-East)
     const turn1ApexPoints: { x: number; z: number }[] = [];
